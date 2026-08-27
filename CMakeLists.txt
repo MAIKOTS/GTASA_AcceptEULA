@@ -1,37 +1,36 @@
-#include "mod/amlmod.h"
-#include "mod/config.h"
-#include "mod/logger.h"
+cmake_minimum_required(VERSION 3.22.1)
+project(AcceptEULA)
 
-MYMODCFG(net.rusjj.gtasa.eula, Accept EULA, 1.0, RusJJ)
-NEEDGAME(com.rockstargames.gtasa)
+# Define o padrão C++17
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-uintptr_t pSCAndLib = 0;
-ConfigEntry* pEULAAccepted;
+# Cria a biblioteca compartilhada (.so) com os arquivos fonte
+add_library(AcceptEULA SHARED
+    main.cpp
+    mod/config.cpp
+)
 
-extern "C" void OnModLoad()
-{
-    // Usando o logger do mod
-    logger->Info("=== AcceptEULA Mod Carregado ===");
+# Diretórios de include (incluindo a raiz para achar a pasta "mod" local)
+target_include_directories(AcceptEULA PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_CURRENT_SOURCE_DIR}/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/AndroidModLoader/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/SAUtils
+)
 
-    pSCAndLib = aml->GetLib("libSCAnd.so");
-    if(pSCAndLib)
-    {
-        logger->Info("Biblioteca libSCAnd.so encontrada com sucesso!");
+# Definições de compilação (-DNDEBUG)
+target_compile_definitions(AcceptEULA PRIVATE
+    NDEBUG
+)
 
-        pEULAAccepted = cfg->Bind("AcceptEULA", true);
-        if(pEULAAccepted->GetBool())
-        {
-            logger->Info("Aplicando patch para aceitar a EULA automaticamente...");
-            
-            aml->Unprot(pSCAndLib + 0x31C149, 1);
-            *(bool*)(pSCAndLib + 0x31C149) = true;
-            
-            logger->Info("Patch aplicado com sucesso!");
-            return;
-        }
-    }
-    else
-    {
-        logger->Error("Erro: libSCAnd.so não foi encontrada!");
-    }
-}
+# Flags de otimização e compilação (aplicando -mfloat-abi=softfp apenas para armeabi-v7a)
+target_compile_options(AcceptEULA PRIVATE
+    -O2
+    $<$<STREQUAL:${ANDROID_ABI},armeabi-v7a>:-mfloat-abi=softfp>
+)
+
+# Bibliotecas do sistema vinculadas (equivalente ao -llog)
+target_link_libraries(AcceptEULA PRIVATE
+    log
+)

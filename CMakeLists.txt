@@ -11,8 +11,9 @@ add_library(AcceptEULA SHARED
     mod/config.cpp
 )
 
-# Diretórios de include (incluindo o seu e os dos submódulos)
+# Diretórios de include (incluindo a raiz para achar a pasta "mod" local)
 target_include_directories(AcceptEULA PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}/include
     ${CMAKE_CURRENT_SOURCE_DIR}/AndroidModLoader/include
     ${CMAKE_CURRENT_SOURCE_DIR}/SAUtils

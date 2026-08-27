@@ -34,6 +34,3 @@ extern "C" void OnModLoad()
         aml->Log("Erro: libSCAnd.so não foi encontrada!");
     }
 }
-        logger->Error("Erro: libSCAnd.so não foi encontrada!");
-    }
-}

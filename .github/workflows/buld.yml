@@ -84,7 +84,7 @@ jobs:
       - name: Upload .so artifact
         uses: actions/upload-artifact@v4
         with:
-          name: libFastBoot-${{ matrix.abi }}
+          name: AcceptEULA -${{ matrix.abi }}
           path: build/${{ matrix.abi }}/**/*.so            -DANDROID_PLATFORM=android-${API_LEVEL} \
             -DCMAKE_BUILD_TYPE=Release \
             -DANDROID_STL=c++_static

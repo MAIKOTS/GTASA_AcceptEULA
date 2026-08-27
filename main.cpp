@@ -1,5 +1,5 @@
-#include <mod/amlmod.h>
-#include <mod/config.h>
+#include "mod/amlmod.h"
+#include "mod/config.h"
 
 MYMODCFG(net.rusjj.gtasa.eula, Accept EULA, 1.0, RusJJ)
 NEEDGAME(com.rockstargames.gtasa)

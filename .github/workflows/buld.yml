@@ -1,4 +1,4 @@
-name: Build RealTraficFix (Android .so)
+name: Build AcceptEULA (Android .so)
 
 on:
   push:

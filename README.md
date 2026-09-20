@@ -24,54 +24,10 @@ Este projeto injeta a alteração necessária em `libSCAnd.so` quando o mod é c
 │   └── ...
 └── README.md
 ```
-
-## Requisitos
-
-- Android NDK instalado
-- Android SDK (para build via CI ou CMake)
-- GTA: San Andreas para Android
-- AndroidModLoader
-
-## Build
-
-### Windows / PowerShell
-
-Primeiro, configure o caminho do NDK no arquivo `ndkpath.txt`:
-
-```text
-D:\android-ndk
-```
-
-Depois execute:
-
-```powershell
-./build.ps1
-```
-
-### Manual via NDK
-
-```bash
-ndk-build \
-  NDK_PROJECT_PATH=$PWD \
-  APP_BUILD_SCRIPT=$PWD/Android.mk \
-  NDK_APPLICATION_MK=$PWD/Application.mk \
-  NDK_DEBUG=0
-```
-
-### CMake
-
-```bash
-cmake -B build/armeabi-v7a \
-  -DANDROID_ABI=armeabi-v7a \
-  -DCMAKE_BUILD_TYPE=Release
-
-cmake --build build/armeabi-v7a --config Release
-```
-
 ## Observações importantes
 
 - O módulo é compilado como uma biblioteca compartilhada `.so`.
-- O alvo usado no projeto é `armeabi-v7a`.
+- O alvo usado no projeto é `armeabi-v7a` e `arm64-v8a`.
 - A modificação principal acontece no offset `0x31C149` dentro de `libSCAnd.so`.
 - O código depende do ambiente do AndroidModLoader para obter a referência da biblioteca e aplicar a alteração em memória.
 

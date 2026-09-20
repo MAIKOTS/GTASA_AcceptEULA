@@ -1,25 +1,18 @@
 #include "mod/amlmod.h"
-#include "mod/config.h"
 
-MYMODCFG(net.rusjj.gtasa.eula, Accept EULA, 1.0, RusJJ)
+MYMOD(net.rusjj.gtasa.eula, Accept EULA, 1.0, RusJJ)
 NEEDGAME(com.rockstargames.gtasa)
-
-uintptr_t pSCAndLib = 0;
-ConfigEntry* pEULAAccepted;
 
 extern "C" void OnModLoad()
 {
-    pSCAndLib = aml->GetLib("libSCAnd.so");
-    if(pSCAndLib)
-    {
-        // Vincula ou cria a entrada na config
-        pEULAAccepted = cfg->Bind("AcceptEULA", true);
+    uintptr_t pSCAndLib = aml->GetLib("libSCAnd.so");
 
-        // Aplica a modificação na memória do libSCAnd.so
-        aml->Unprot(pSCAndLib + 0x31C149, 1);
-        *(bool*)(pSCAndLib + 0x31C149) = true;
+    if (!pSCAndLib)
+        return;
 
-        // Salva o estado atualizado da config
-        cfg->Save();
-    }
+    constexpr uintptr_t EULA_OFFSET = 0x31C149;
+
+    // Libera a proteção da memória e ativa a aceitação da EULA.
+    aml->Unprot(pSCAndLib + EULA_OFFSET, sizeof(bool));
+    *reinterpret_cast<bool*>(pSCAndLib + EULA_OFFSET) = true;
 }

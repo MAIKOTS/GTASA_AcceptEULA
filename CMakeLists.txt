@@ -25,14 +25,3 @@ target_compile_options(AcceptEULA PRIVATE
 target_link_libraries(AcceptEULA PRIVATE
     log
 )
-
-target_compile_options(AcceptEULA PRIVATE
-    -O2
-    -ffunction-sections
-    -fdata-sections
-)
-
-target_link_options(AcceptEULA PRIVATE
-    -Wl,--gc-sections
-    -Wl,--strip-all
-)

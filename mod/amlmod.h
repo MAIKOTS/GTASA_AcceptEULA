@@ -1,125 +1,21 @@
-#ifndef _AMLMOD
-#define _AMLMOD
+#ifndef ACCEPT_EULA_AMLMOD_H
+#define ACCEPT_EULA_AMLMOD_H
 
-#include <stdio.h>
-#include <ctype.h>
-#include <cstring>
-#include <stdlib.h>
-#include <signal.h>
-#include <math.h>
-#include <algorithm>
+#include <cstdint>
+#include <cstddef>
+#include <cstdio>
+#include <cstdlib>
+#include <cctype>
+
+#include "interface.h"
 
 #if defined(__arm__) || defined(_WIN32)
     #define AML32
-    #define BYBIT(__32val, __64val) (__32val)
 #elif defined(__aarch64__) || defined(_WIN64)
     #define AML64
-    #define BYBIT(__32val, __64val) (__64val)
 #else
-    #error This lib is supposed to work on ARM only!
+    #error This mod supports ARM architectures only.
 #endif
-
-
-
-#ifdef AML32
-    #define PTRFMT "0x%08X"
-    #define PTRNUMFMT "%u"
-#else
-    #define PTRFMT "0x%016lX"
-    #define PTRNUMFMT "%lu"
-#endif
-
-
-
-#ifdef __clang__
-    #define TARGET_ARM __attribute__((target("no-thumb-mode")))
-    #define TARGET_THUMB  __attribute__((target("thumb-mode")))
-#endif
-
-#ifdef __GNUC__
-    #define ASM_NAKED __attribute__((naked))
-#else
-    #define ASM_NAKED __declspec(naked)
-#endif
-#define EXPORT JNIEXPORT
-
-// AML Mods, important stuff
-
-#define MYMOD(_guid, _name, _version, _author)                          \
-    static ModInfo modinfoLocal(#_guid, #_name, #_version, #_author);   \
-    ModInfo* modinfo = &modinfoLocal;                                   \
-    extern "C" JNIEXPORT ModInfo* __GetModInfo() { return modinfo; }    \
-    IAML* aml = NULL;                                                   \
-    struct AMLInitStub {                                                \
-        AMLInitStub() {                                                 \
-            aml = (IAML*)GetInterface("AMLInterface");                  \
-        }                                                               \
-    }; AMLInitStub amlStub __attribute__((init_priority(101))); // Highest init prio
-
-#define MYMODCFG(_guid, _name, _version, _author)                       \
-    MYMOD(_guid, _name, _version, _author);                             \
-    static Config cfgLocal(#_guid);                                     \
-    Config* cfg = &cfgLocal;
-
-#define MYMODCFGNAME(_guid, _name, _version, _author, _cfgname)         \
-    MYMOD(_guid, _name, _version, _author);                             \
-    static Config cfgLocal(#_cfgname);                                  \
-    Config* cfg = &cfgLocal;
-
-#define NEEDGAME(_pkg_name)                                             \
-    extern "C" JNIEXPORT const char* __INeedASpecificGame() { return #_pkg_name; }
-
-// Dependencies!
-#define BEGIN_DEPLIST()                                                 \
-    static ModInfoDependency g_listDependencies[] = {
-
-#define ADD_DEPENDENCY(_guid)                                           \
-    {#_guid, ""},
-
-#define ADD_DEPENDENCY_VER(_guid, _version)                             \
-    {#_guid, #_version},
-
-#define END_DEPLIST()                                                   \
-    {"", ""} };                                                         \
-    extern "C" JNIEXPORT ModInfoDependency* __GetDepsList() { return &g_listDependencies[0]; }
-
-// Macros to stop forgetting stuff!
-#define ON_MOD_PRELOAD()                                                \
-    extern "C" JNIEXPORT void OnModPreLoad()
-
-#define ON_MOD_LOAD()                                                   \
-    extern "C" JNIEXPORT void OnModLoad()
-
-#define ON_ALL_MODS_LOAD()                                              \
-    extern "C" JNIEXPORT void OnAllModsLoaded()
-
-#define ON_MOD_UNLOAD()                                                 \
-    extern "C" JNIEXPORT void OnModUnload() /*Not guaranteed*/
-
-#define ON_GAME_CRASH()                                                 \
-    extern "C" JNIEXPORT void OnGameCrash(const char* library, int sig, int code, uintptr_t libaddr, mcontext_t* mcontext) /*Not guaranteed*/
-
-#define UPDATER_URL()                                                   \
-    extern "C" JNIEXPORT const char* OnUpdaterURLRequested()
-
-#define ON_NEW_INTERFACE()                                              \
-    extern "C" JNIEXPORT void OnInterfaceAdded(const char* name, const void* ptr)
-
-// Helpers
-
-#define MINIMUM_MD5_BUF_SIZE ( 32 + 1 )
-
-struct MemChunk_t
-{
-    char* out;
-    size_t out_len;
-};
-    
-struct ModInfoDependency
-{
-    const char* szGUID;
-    const char* szVersion;
-};
 
 struct ModVersion
 {
@@ -129,188 +25,119 @@ struct ModVersion
     unsigned short build;
 };
 
-// Should be faster than strncpy?
-inline char *strxcpy(char* __restrict__ dst, const char* __restrict__ src, int len)
+inline char* strxcpy(char* dst, const char* src, int len)
 {
-    if(!len) return NULL;
-    while(--len && (*dst++ = *src++));
-    if(!len)
+    if (!len)
+        return nullptr;
+
+    while (--len && (*dst++ = *src++))
+        ;
+
+    if (!len)
     {
-        *dst++ = 0;
-        return (*src ? NULL : dst);
+        *dst++ = '\0';
+        return (*src ? nullptr : dst);
     }
+
     return dst;
 }
-inline int strindexof(const char* haystack, const char* needle)
-{
-    const char* ptr = strstr(haystack, needle);
-    return ptr ? (int)(ptr - haystack) : -1;
-}
-inline bool strcontains(const char* str, const char* sub)
-{
-    return (strstr(str, sub) != NULL);
-}
-inline bool strstarts(const char* str, const char* prefix)
-{
-    size_t lenstr = strlen(str), lenpre = strlen(prefix);
-    return (lenstr >= lenpre && strncmp(str, prefix, lenpre) == 0);
-}
-inline bool strends(const char* str, const char* suffix)
-{
-    size_t lenstr = strlen(str), lensuf = strlen(suffix);
-    return (lenstr >= lensuf && strcmp(str + lenstr - lensuf, suffix) == 0);
-}
 
-inline int clampint(const int min_val, const int max_val, int v)
+class ModInfo
 {
-    return std::max(min_val, std::min(max_val, v));
-}
-inline void clampint(const int min, const int max, int* v)
-{
-    if(v) *v = clampint(min, max, *v);
-}
-inline float clampfloat(const float min_val, const float max_val, float v)
-{
-    return std::max(min_val, std::min(max_val, v));
-}
-inline void clampfloat(float min, float max, float* v)
-{
-    if(v) *v = clampint(min, max, *v);
-}
-inline float lerp(float a, float b, float t)
-{
-    return (1.0f - t) * a + t * b;
-}
-inline float invlerp(float a, float b, float value)
-{
-    if (a == b) return 0.0f;
-    return (value - a) / (b - a);
-}
-template <typename T> T sq(T x)
-{
-    return x * x;
-}
-template <typename T> T cube(T x)
-{
-    return x * x * x;
-}
+public:
+    ModInfo(
+        const char* guid,
+        const char* name,
+        const char* versionString,
+        const char* author)
+    {
+        strxcpy(szGUID, guid, sizeof(szGUID));
+        szGUID[sizeof(szGUID) - 1] = '\0';
 
-inline bool randbool()
-{
-    return ((rand() & 1) == 0);
-}
-inline bool randchance(float probability) // 0.00 - 1.00
-{
-    return (( (float)rand() / (float)RAND_MAX ) < probability);
-}
-inline int randint(int min, int max)
-{
-    return min + (rand() % (max - min + 1));
-}
-inline float randfloat(float min, float max)
-{
-    return min + ((float)rand() / (float)RAND_MAX) * (max - min);
-}
-inline int randsign()
-{
-    return (rand() & 1) ? 1 : -1;
-}
-inline float remap(float value, float low1, float high1, float low2, float high2)
-{
-    return low2 + (value - low1) * (high2 - low2) / (high1 - low1);
-}
-inline float smoothstep(float edge0, float edge1, float x)
-{
-    float t = clampfloat(0.0f, 1.0f, (x - edge0) / (edge1 - edge0) );
-    return t * t * (3.0f - 2.0f * t);
-}
-inline float wrapfloat(float value, float min, float max)
-{
-    float range = max - min;
-    float result = fmodf(value - min, range);
-    if(result < 0.0f) result += range;
-    return result + min;
-}
-inline int wrapint(int value, int min_val, int max_val)
-{
-    int range = max_val - min_val;
-    if(range <= 0) return min_val;
-    int result = (value - min_val) % range;
-    if(result < 0) result += range;
-    return result + min_val;
-}
+        strxcpy(szName, name, sizeof(szName));
+        szName[sizeof(szName) - 1] = '\0';
 
-#define ONE_OVER_PI 0.31830988618379067154f
-inline float ultra_fastsin(float x) // [-PI; PI], very inaccurate !!!
-{
-    float y = 1.27323954f * x - 0.405284735f * x * (x < 0.0f ? -x : x);
-    return ( 0.225f * (y * (y < 0.0f ? -y : y) - y) + y );
-}
-inline float ultra_fastcos(float x) // [-PI; PI], very inaccurate !!!
-{
-    float x_shifted = 1.57079632f - (x < 0.0f ? -x : x);
-    float y = 1.27323954f * x_shifted - 0.405284735f * x_shifted * (x_shifted < 0.0f ? -x_shifted : x_shifted);
-    return ( 0.225f * (y * (y < 0.0f ? -y : y) - y) + y );
-}
-inline void ultra_fastsincos(float x, float* out_sin, float* out_cos) // [-PI; PI], very inaccurate !!!
-{
-    float abs_x = (x < 0.0f) ? -x : x;
-    float x_cos = 1.57079632f - abs_x;
-    
-    float y_sin = 1.27323954f * x - 0.405284735f * x * (x < 0.0f ? -x : x);
-    float y_cos = 1.27323954f * x_cos - 0.405284735f * x_cos * (x_cos < 0.0f ? -x_cos : x_cos);
-    
-    *out_sin = 0.225f * (y_sin * (y_sin < 0.0f ? -y_sin : y_sin) - y_sin) + y_sin;
-    *out_cos = 0.225f * (y_cos * (y_cos < 0.0f ? -y_cos : y_cos) - y_cos) + y_cos;
-}
-inline float fastsin(float x) // much better than above but not guaranteed to be the best!
-{
-    float q = roundf(x * ONE_OVER_PI);
-    float x_reduced = x - q * M_PI;
+        strxcpy(szVersion, versionString, sizeof(szVersion));
+        szVersion[sizeof(szVersion) - 1] = '\0';
 
-    float sign = (float)(1 - ((int)q & 1) * 2);
-    float x2 = x_reduced * x_reduced;
-    float res = x_reduced * (1.0f + x2 * (-0.1666665671f + 
-                x2 * (0.0083321510f + 
-                x2 * (-0.0001951529f))));
-    return res * sign;
-}
-inline float fastcos(float x) 
-{
-    float q = roundf((x + (float)M_PI * 0.5f) * ONE_OVER_PI);
-    float x_reduced = (x + (float)M_PI * 0.5f) - q * (float)M_PI;
+        strxcpy(szAuthor, author, sizeof(szAuthor));
+        szAuthor[sizeof(szAuthor) - 1] = '\0';
 
-    float sign = (float)(1 - ((int)q & 1) * 2);
-    float x2 = x_reduced * x_reduced;
-    float res = x_reduced * (1.0f + x2 * (-0.1666665671f + 
-                x2 * (0.0083321510f + 
-                x2 * (-0.0001951529f))));
-    return res * sign;
-}
-inline void fastsincos(float x, float* out_sin, float* out_cos) 
-{
-    float q_sin = roundf(x * ONE_OVER_PI);
-    float x_sin = x - q_sin * (float)M_PI;
-    float sign_sin = (float)(1 - ((int)q_sin & 1) * 2);
-    
-    float q_cos = roundf((x + (float)M_PI * 0.5f) * ONE_OVER_PI);
-    float x_cos = (x + (float)M_PI * 0.5f) - q_cos * (float)M_PI;
-    float sign_cos = (float)(1 - ((int)q_cos & 1) * 2);
-    
-    float x2_sin = x_sin * x_sin;
-    float x2_cos = x_cos * x_cos;
+        version = {0, 0, 0, 0};
 
-    float res_sin = x_sin * (1.0f + x2_sin * (-0.1666665671f + x2_sin * (0.0083321510f + x2_sin * (-0.0001951529f))));
-    float res_cos = x_cos * (1.0f + x2_cos * (-0.1666665671f + x2_cos * (0.0083321510f + x2_cos * (-0.0001951529f))));
+        for (int i = 0; szGUID[i] != '\0'; ++i)
+            szGUID[i] = static_cast<char>(
+                std::tolower(static_cast<unsigned char>(szGUID[i]))
+            );
 
-    *out_sin = res_sin * sign_sin;
-    *out_cos = res_cos * sign_cos;
-}
-template <typename T> int getsign(T val)
-{
-    return (T(0) < val) - (val < T(0));
-}
-inline bool is_pow2(int x) // if its 1,2,4,8, ... , 256, 512, ...
+        if (std::sscanf(
+                szVersion,
+                "%hu.%hu.%hu.%hu",
+                &version.major,
+                &version.minor,
+                &version.revision,
+                &version.build) < 4)
+        {
+            if (std::sscanf(
+                    szVersion,
+                    "%hu.%hu.%hu",
+                    &version.major,
+                    &version.minor,
+                    &version.revision) < 3)
+            {
+                if (std::sscanf(
+                        szVersion,
+                        "%hu.%hu",
+                        &version.major,
+                        &version.minor) < 2)
+                {
+                    version.major = static_cast<unsigned short>(
+                        std::atoi(szVersion)
+                    );
+                }
+
+                version.revision = 0;
+            }
+
+            version.build = 0;
+        }
+    }
+
+private:
+    char szGUID[48];
+    char szName[48];
+    char szVersion[24];
+    char szAuthor[48];
+    ModVersion version;
+};
+
+extern ModInfo* modinfo;
+extern IAML* aml;
+
+#define MYMOD(_guid, _name, _version, _author)                         \
+    static ModInfo modinfoLocal(#_guid, #_name, #_version, #_author);  \
+    ModInfo* modinfo = &modinfoLocal;                                  \
+    extern "C" JNIEXPORT ModInfo* __GetModInfo()                      \
+    {                                                                  \
+        return modinfo;                                                \
+    }                                                                  \
+    IAML* aml = nullptr;                                                \
+    struct AMLInitStub                                                   \
+    {                                                                  \
+        AMLInitStub()                                                    \
+        {                                                                \
+            aml = static_cast<IAML*>(GetInterface("AMLInterface"));     \
+        }                                                                \
+    };                                                                   \
+    static AMLInitStub amlStub;
+
+#define NEEDGAME(_pkg_name)                                             \
+    extern "C" JNIEXPORT const char* __INeedASpecificGame()            \
+    {                                                                   \
+        return #_pkg_name;                                               \
+    }
+
+#endifbool is_pow2(int x) // if its 1,2,4,8, ... , 256, 512, ...
 {
     return ( (x > 0) && ((x & (x - 1)) == 0) );
 }

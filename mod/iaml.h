@@ -1,42 +1,40 @@
-#ifndef ACCEPT_EULA_IAML_H
-#define ACCEPT_EULA_IAML_H
+#ifndef _IAML
+#define _IAML
 
-#include <cstddef>
-#include <cstdint>
+// Usage: place 3 lines somewhere in the code AFTER #include <mod/amlmod.h>
+// #if !defined(IAML_VER) && IAML_VER < 01040100
+//     #error "You need to update your MOD folder to 1.4.1!"
+// #endif
+#define IAML_VER 01040100
+
+#include <stdint.h>
+#include <type_traits>
+#include <initializer_list>
+#include <vector>
+
+#include "interface.h"
+#include <jni.h>
+#include <android/asset_manager.h>
+#include <android/asset_manager_jni.h>
+
+// Because the name was changed to be more understandable
+#define PlaceB PlaceJMP
 
 #ifndef PAGE_SIZE
     #define PAGE_SIZE 4096
 #endif
 
-class IAML
+enum eManifestPermissions
 {
-public:
-    virtual const char* GetCurrentGame() = 0;
-    virtual const char* GetConfigPath() = 0;
-    virtual bool HasMod(const char* guid) = 0;
-    virtual bool HasModOfVersion(
-        const char* guid,
-        const char* version) = 0;
+    P_READ_EXTERNAL_STORAGE = 0,
+    P_WRITE_EXTERNAL_STORAGE,
+}; // Unused
 
-    virtual uintptr_t GetLib(const char* libraryName) = 0;
+// AML 1.3.0 stuff (Vibration patterns, examples)
+static jlong DEFAULT_VIBRATE_PATTERN[4] = {0, 250, 250, 250};
+static jlong g_VibroPattern_Weak[7] = { 0, 20, 80, 20, 80, 20, 80 };
+static jlong g_VibroPattern_Alert[6] = { 0, 200, 100, 200, 100, 400 };
 
-    virtual uintptr_t GetSym(
-        void* handle,
-        const char* symbol) = 0;
-
-    virtual bool Hook(
-        void* handle,
-        void* function,
-        void** originalFunction = nullptr) = 0;
-
-    virtual int Unprot(
-        uintptr_t address,
-        size_t length = PAGE_SIZE) = 0;
-};
-
-extern IAML* aml;
-
-#endif
 // I`m redoing this because i dont want to include additional file
 // Thanks @XMDS, maybe someone will use it
 struct GlossRegisters
